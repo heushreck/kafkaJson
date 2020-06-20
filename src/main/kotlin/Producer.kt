@@ -8,9 +8,14 @@ import java.io.IOException
 import java.util.*
 
 
-fun main() {
+fun main(args: Array<String>) {
+    if (args.isNullOrEmpty()) {
+        println("Usage: java -jar producer.jar [server-address]")
+        return
+    }
+
     val properties = Properties()
-    properties["bootstrap.servers"] = "localhost:29092"
+    properties["bootstrap.servers"] = args[0]
     properties["key.serializer"] = StringSerializer::class.java
     properties["value.serializer"] = ByteArraySerializer::class.java
     val producer = Producer<ByteArray>(properties)
