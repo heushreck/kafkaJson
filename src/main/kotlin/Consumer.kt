@@ -11,19 +11,14 @@ class Consumer<X>(properties: Properties) {
     val properties: Properties = properties
     val consumer: KafkaConsumer<String, X> = KafkaConsumer<String, X>(properties)
 
-    fun consume(topicName:String){
+    fun consume(topicName:String): ConsumerRecords<String?, X?>{
         consumer.subscribe(listOf(topicName))
-        println("Subscribed to topic $topicName")
-        val records: ConsumerRecords<String?, X?> = consumer.poll(10000)
-        //consumer.seekToBeginning(consumer.assignment())
-        //val records: ConsumerRecords<String?, X?> = consumer.poll(Duration.ofMillis(Long.MAX_VALUE))
-        for (record in records) {
-            System.out.printf(
-                "topic = %s, offset = %d, key = %s, value = %s, timestamp = %s\n",
-                topicName, record.offset(), record.key(), record.value().toString(), record.timestamp().toString()
-            )
-        }
+        //println("Subscribed to topic $topicName")
+        val records: ConsumerRecords<String?, X?> = consumer.poll(Duration.ofSeconds(15))
+        
+        return records        
     }
+
     fun finalize() {
         consumer.unsubscribe()
     }

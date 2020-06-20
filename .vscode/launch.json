@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Kotlin Launch",
             "projectRoot": "${workspaceFolder}",
-            "mainClass": "ProducerKt"
+            "mainClass": "MainKt"
         }
     ]
 }
