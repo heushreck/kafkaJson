@@ -6,17 +6,14 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import java.time.Duration
 import java.util.*
 
-class Consumer<X>(properties: Properties) {
+class Consumer(properties: Properties) {
+    val consumer: KafkaConsumer<String, ByteArray> = KafkaConsumer<String, ByteArray>(properties)
 
-    val properties: Properties = properties
-    val consumer: KafkaConsumer<String, X> = KafkaConsumer<String, X>(properties)
-
-    fun consume(topicName:String): ConsumerRecords<String?, X?>{
+    fun consume(topicName:String): ConsumerRecords<String?, ByteArray?>{
         consumer.subscribe(listOf(topicName))
         //println("Subscribed to topic $topicName")
-        val records: ConsumerRecords<String?, X?> = consumer.poll(Duration.ofSeconds(15))
-        
-        return records        
+        val records = consumer.poll(Duration.ofSeconds(15))
+        return records
     }
 
     fun finalize() {

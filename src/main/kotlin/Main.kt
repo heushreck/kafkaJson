@@ -18,32 +18,30 @@ fun main() {
         delay(2000L)
         val producer = Producer(properties)
         
-        Run(producer, "events.json")
+        Run(producer, "events-big.json")
         producer.finalize()
     }
     properties["key.deserializer"] = StringDeserializer::class.java
     properties["value.deserializer"] = ByteArrayDeserializer::class.java
     properties["session.timeout.ms"] = "10000"
-    
-    val consumer1 = Consumer<ByteArray>(properties)
-    val consumer2 = Consumer<ByteArray>(properties)
+    properties["enable.auto.commit"] = "true"
+    properties["auto.offset.reset"] = "earliest"
+    val consumer1 = Consumer(properties)
     val map = ConcurrentHashMap<String, Long>()
     GlobalScope.launch {
-        val records = consumer1.consume("event_test")
+        var records = consumer1.consume("event_test")
+        consumer1.finalize()
         records.iterator().forEach { 
             map.put(it.key()!!, it.timestamp())
         }
-        consumer1.finalize()
     }
+    val consumer2 = Consumer(properties)
     val meetups = consumer2.consume("MEETUP_EVENT_STREAM_DE")
     consumer2.finalize()
     
     Thread.sleep(5000L)
-
-    val results = HashMap<String, Long>()
-
+    val results = hashMapOf<String, Long>()
     println(map.size)
-
     meetups.iterator().forEach { 
         val key = it.key()!!
         val timestamp = map[key]
