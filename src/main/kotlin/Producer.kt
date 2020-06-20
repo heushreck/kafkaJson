@@ -22,6 +22,7 @@ fun main(args: Array<String>) {
 
     sampleRun(producer)
     Run(producer, "events.json")
+    producer.finalize()
 }
 
 fun sampleRun(sampleProducer: Producer<ByteArray>){
@@ -54,6 +55,9 @@ class Producer<X>(properties: Properties) {
     fun produce(topicName:String, key:String , value: X){
         val producerRecord = ProducerRecord(topicName, key, value)
         kafkaProducer.send(producerRecord)
+    }
+
+    fun finalize() {
         kafkaProducer.close()
     }
 }
