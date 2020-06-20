@@ -47,8 +47,9 @@ fun Run(producer: Producer<ByteArray>, filepath: String){
 
 class Producer<X>(properties: Properties) {
 
-    var kafkaProducer: KafkaProducer<String, X> = KafkaProducer<String, X>(properties)
     var properties: Properties = properties
+    var kafkaProducer: KafkaProducer<String, X> = KafkaProducer<String, X>(properties)
+
 
     fun produce(topicName:String, key:String , value: X){
         val producerRecord = ProducerRecord(topicName, key, value)
