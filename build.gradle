@@ -23,8 +23,12 @@ dependencies {
 jar {
     manifest {
         attributes (
-            'Main-Class': 'org.example.Producer'
+            'Main-Class': 'ProducerKt'
         )
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 
