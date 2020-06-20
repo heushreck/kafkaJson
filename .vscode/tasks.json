@@ -13,6 +13,14 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Clean Env",
+            "type": "shell",
+            "command": "./gradlew",
+            "args": ["clean"],
+            "problemMatcher": [],
+            "group": "build"
         }
     ]
 }

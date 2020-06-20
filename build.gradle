@@ -32,6 +32,13 @@ jar {
     }
 }
 
+task copyJar(type: Copy) {
+    from jar // here it automatically reads jar file produced from jar task
+    into 'bin'
+}
+
+build.dependsOn copyJar
+
 compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
