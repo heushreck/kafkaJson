@@ -47,6 +47,15 @@ class Producer(properties: Properties) {
     }
 
     fun finalize() {
+        /*
+        val metrics = kafkaProducer.metrics()
+        metrics.iterator().forEach {
+            if(it.key.name().equals("request-latency-avg")) println(it.key.name() + ": " + it.value.metricValue() + " des: " + it.key.description())
+            if(it.key.name().equals("request-size-avg")) println(it.key.name() + ": " + it.value.metricValue() + " des: " + it.key.description())
+            if(it.key.name().equals("incoming-byte-total")) println(it.key.name() + ": " + it.value.metricValue() + " des: " + it.key.description())
+            if(it.key.name().equals("outgoing-byte-rate")) println(it.key.name() + ": " + it.value.metricValue() + " des: " + it.key.description())
+        }
+         */
         kafkaProducer.close()
     }
 }

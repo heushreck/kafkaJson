@@ -1,12 +1,18 @@
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.apache.kafka.common.MetricName
+import org.apache.kafka.common.metrics.MetricConfig
+import org.apache.kafka.common.metrics.stats.Avg
+import org.apache.kafka.common.metrics.stats.Max
+import org.apache.kafka.common.metrics.stats.Min
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+
 
 fun main() {
     val properties = Properties()
@@ -17,8 +23,10 @@ fun main() {
     GlobalScope.launch {
         delay(2000L)
         val producer = Producer(properties)
-        
+        val time_before = System.currentTimeMillis()
         Run(producer, "events-big.json")
+        val time_after = System.currentTimeMillis()
+        println("time before: " + time_before + " time after: " + time_after + " diff: " + (time_after - time_before))
         producer.finalize()
     }
     properties["key.deserializer"] = StringDeserializer::class.java
@@ -39,7 +47,7 @@ fun main() {
     val meetups = consumer2.consume("MEETUP_EVENT_STREAM_DE")
     consumer2.finalize()
     
-    Thread.sleep(5000L)
+    Thread.sleep(30000L)
     val results = hashMapOf<String, Long>()
     println(map.size)
     meetups.iterator().forEach { 
@@ -49,7 +57,6 @@ fun main() {
             results.put(key, timestamp - it.timestamp())
         }        
     }
-
     println(results)
    
 }
