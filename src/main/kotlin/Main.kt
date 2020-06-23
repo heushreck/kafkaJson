@@ -18,22 +18,16 @@ import java.time.Duration
 val config = HashMap<String, String>()
 val json = Json(JsonConfiguration(ignoreUnknownKeys = true))
 
-fun main(args: Array<String>) = Kafka().subcommands(Produce(), Consume()).main(args)
+fun main(args: Array<String>) = Kafka().subcommands(Produce(), Consume(), Metrics()).main(args)
 
 class Kafka : CliktCommand(
     help = """Kafka is a command line tool to either produce or consume
     kafka topics.""") {
     
-    val serverAddress: String? by option(help = "Server address of Kafka Broker.")
+    val serverAddress: String by option(help = "Server address of Kafka Broker.").default("localhost:29092")
 
     override fun run() {
-        var address: String
-        if (this.serverAddress != null) {
-            address = this.serverAddress.toString()
-        } else {
-            address = "localhost:29092"
-        }
-        config["server-address"] = address        
+        config["server-address"] = serverAddress        
     }
 }
 
@@ -67,7 +61,7 @@ class Produce : CliktCommand(help = "Starts the Kafka Producer") {
 
 class Consume : CliktCommand(help = "Starts the Kafka Consumer") {
     
-    val groupID: String? by option(help = "Group ID of Consumer.").default("test")
+    val groupID: String by option(help = "Group ID of Consumer.").default("test")
     val topic1: String by option(help = "Topic of first consumer routine.").default("event_test")
     val topic2: String by option(help = "Topic of second consumer routine.").default("MEETUP_EVENT_STREAM_DE")
     val outputFile: String by option(help = "Name of file to output latency measures to.").default("results.json")
@@ -126,5 +120,30 @@ class Consume : CliktCommand(help = "Starts the Kafka Consumer") {
         
         println(String.format("Output File: %s", outputFile))
         File(outputFile).writeText(jsonString)
+    }
+}
+
+class Metrics : CliktCommand(help = "Collects Kafka Metrics") {
+
+    val groupID: String by option(help = "Group ID for metrics.").default("test")
+    val clientID: String by option(help = "Client ID for metrics.").default("test")
+    val topic: String by option(help = "Topic for metrics").default("event_test")
+    val props = Properties()
+    
+
+    override fun run() {
+        props["bootstrap.servers"] = config["server-address"]
+        props["group.id"] = groupID
+        props["client-id"] = clientID
+        props["topic"] = topic
+
+        val propMap = props as Map<String, String>
+            
+        val kafkaMetrics = KafkaMetrics(propMap)
+
+        val metrics = kafkaMetrics.collectMetrics()
+        metrics.iterator().forEach {
+            println(String.format("Metric: %s, Value: %s", it.key.name(), it.value.metricValue()))            
+        }
     }
 }
