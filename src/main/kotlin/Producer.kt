@@ -18,13 +18,13 @@ fun sampleRun(sampleProducer: Producer){
     sampleProducer.produce("event_test", data)
 }
 
-fun Run(producer: Producer, filepath: String){
+fun Run(topic: String, producer: Producer, filepath: String){
     val reader: BufferedReader
     try {
         reader = BufferedReader(FileReader(filepath))
         var line = reader.readLine()
         while (line != null) {
-            producer.produce("event_test", line)
+            producer.produce(topic, line)
             line = reader.readLine()
         }
         reader.close()
@@ -33,29 +33,20 @@ fun Run(producer: Producer, filepath: String){
     }
 }
 
-class Producer(properties: Properties) {
+class Producer(properties: Properties, json: Json) {
 
     var properties: Properties = properties
     var kafkaProducer: KafkaProducer<String, ByteArray> = KafkaProducer<String, ByteArray>(properties)
-    val json = Json(JsonConfiguration(ignoreUnknownKeys = true))
-
+    val json = json
 
     fun produce(topicName:String, value: String){
-        val key = json.parse(Data.serializer(),value).id
+        val key = json.parse(Data.serializer(), value).id
         val producerRecord = ProducerRecord(topicName, key, value.toByteArray())
+        println(String.format("Produce: %s", key))
         kafkaProducer.send(producerRecord)
     }
 
     fun finalize() {
-        /*
-        val metrics = kafkaProducer.metrics()
-        metrics.iterator().forEach {
-            if(it.key.name().equals("request-latency-avg")) println(it.key.name() + ": " + it.value.metricValue() + " des: " + it.key.description())
-            if(it.key.name().equals("request-size-avg")) println(it.key.name() + ": " + it.value.metricValue() + " des: " + it.key.description())
-            if(it.key.name().equals("incoming-byte-total")) println(it.key.name() + ": " + it.value.metricValue() + " des: " + it.key.description())
-            if(it.key.name().equals("outgoing-byte-rate")) println(it.key.name() + ": " + it.value.metricValue() + " des: " + it.key.description())
-        }
-         */
         kafkaProducer.close()
     }
 }

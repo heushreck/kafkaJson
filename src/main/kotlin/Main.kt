@@ -1,62 +1,130 @@
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import org.apache.kafka.common.MetricName
-import org.apache.kafka.common.metrics.MetricConfig
-import org.apache.kafka.common.metrics.stats.Avg
-import org.apache.kafka.common.metrics.stats.Max
-import org.apache.kafka.common.metrics.stats.Min
+import kotlinx.coroutines.*
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
+import kotlinx.serialization.internal.*
+import kotlinx.serialization.builtins.*
+import java.util.*
+import com.github.ajalt.clikt.parameters.options.*
+import com.github.ajalt.clikt.parameters.types.long
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.subcommands
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
+import java.io.File
+import java.time.Duration
 
+val config = HashMap<String, String>()
+val json = Json(JsonConfiguration(ignoreUnknownKeys = true))
 
-fun main() {
-    val properties = Properties()
-    properties["bootstrap.servers"] = "localhost:29092"
-    properties["group.id"] = "test"
-    properties["key.serializer"] = StringSerializer::class.java
-    properties["value.serializer"] = ByteArraySerializer::class.java
-    GlobalScope.launch {
-        delay(2000L)
-        val producer = Producer(properties)
-        val time_before = System.currentTimeMillis()
-        Run(producer, "events-big.json")
-        val time_after = System.currentTimeMillis()
-        println("time before: " + time_before + " time after: " + time_after + " diff: " + (time_after - time_before))
-        producer.finalize()
-    }
-    properties["key.deserializer"] = StringDeserializer::class.java
-    properties["value.deserializer"] = ByteArrayDeserializer::class.java
-    properties["session.timeout.ms"] = "10000"
-    properties["enable.auto.commit"] = "true"
-    properties["auto.offset.reset"] = "earliest"
-    val consumer1 = Consumer(properties)
-    val map = ConcurrentHashMap<String, Long>()
-    GlobalScope.launch {
-        var records = consumer1.consume("event_test")
-        consumer1.finalize()
-        records.iterator().forEach { 
-            map.put(it.key()!!, it.timestamp())
-        }
-    }
-    val consumer2 = Consumer(properties)
-    val meetups = consumer2.consume("MEETUP_EVENT_STREAM_DE")
-    consumer2.finalize()
+fun main(args: Array<String>) = Kafka().subcommands(Produce(), Consume()).main(args)
+
+class Kafka : CliktCommand(
+    help = """Kafka is a command line tool to either produce or consume
+    kafka topics.""") {
     
-    Thread.sleep(30000L)
-    val results = hashMapOf<String, Long>()
-    println(map.size)
-    meetups.iterator().forEach { 
-        val key = it.key()!!
-        val timestamp = map[key]
-        if (timestamp != null){
-            results.put(key, timestamp - it.timestamp())
-        }        
+    val serverAddress: String? by option(help = "Server address of Kafka Broker.")
+
+    override fun run() {
+        var address: String
+        if (this.serverAddress != null) {
+            address = this.serverAddress.toString()
+        } else {
+            address = "localhost:29092"
+        }
+        config["server-address"] = address        
     }
-    println(results)
-   
+}
+
+class Produce : CliktCommand(help = "Starts the Kafka Producer") {
+    
+    val groupID: String by option(help = "Group ID of Producer.").default("test")
+    val fileName: String by option(help = "JSON file to read events from.").default("events.json")
+    val topic: String by option(help = "Topic to produce events to.").default("event_test")
+    val props = Properties()
+
+    override fun run() {
+        // Populate producer properties
+        props["bootstrap.servers"] = config["server-address"]
+        props["key.serializer"] = StringSerializer::class.java
+        props["value.serializer"] = ByteArraySerializer::class.java
+        props["group.id"] = groupID
+               
+        println(String.format("Kafka Broker: %s, Group ID: %s, Topic: %s, Event File: %s", config["server-address"], groupID, topic, fileName))
+        val producer = Producer(props, json)
+
+        val time_before = System.currentTimeMillis()
+        Run(topic, producer, fileName)
+        val time_after = System.currentTimeMillis()
+        val diff = time_after - time_before
+        val file_size = File(fileName).length()
+        println(String.format("Start: %d, End: %d, Difference: %d ms, File Size: %d bytes", time_before, time_after, diff, file_size))
+        
+        producer.finalize()        
+    }
+}
+
+class Consume : CliktCommand(help = "Starts the Kafka Consumer") {
+    
+    val groupID: String? by option(help = "Group ID of Consumer.").default("test")
+    val topic1: String by option(help = "Topic of first consumer routine.").default("event_test")
+    val topic2: String by option(help = "Topic of second consumer routine.").default("MEETUP_EVENT_STREAM_DE")
+    val outputFile: String by option(help = "Name of file to output latency measures to.").default("results.json")
+    val pollDuration: Long by option(help = "Name of file to output latency measures to.").long().default(15)
+    val props = Properties()
+
+    override fun run() {
+        // Populate consumer properties
+        props["bootstrap.servers"] = config["server-address"]
+        props["key.deserializer"] = StringDeserializer::class.java
+        props["value.deserializer"] = ByteArrayDeserializer::class.java
+        props["session.timeout.ms"] = "10000"
+        props["enable.auto.commit"] = "true"
+        props["auto.offset.reset"] = "earliest"
+        props["group.id"] = groupID
+        val duration = Duration.ofSeconds(pollDuration)
+
+        val consumerFunc = fun(cons: Consumer, topic: String): Map<String, Long>{
+            val res = cons.consume(topic, duration)
+            val map = HashMap<String, Long>()
+            cons.finalize()
+            res.iterator().forEach { 
+                map.put(it.key()!!, it.timestamp())
+            }
+            return map            
+        }
+
+        println(String.format("Kafka Broker: %s, Group ID: %s, Topic: %s, Poll Duration: %d S", config["server-address"], groupID, topic1, duration.toSeconds()))
+        val cons1 = Consumer(props)
+        fun one() = GlobalScope.async {
+            consumerFunc(cons1, topic1)
+        }
+
+        println(String.format("Kafka Broker: %s, Group ID: %s, Topic: %s, Poll Duration: %d S", config["server-address"], groupID, topic1, duration.toSeconds()))
+        val cons2 = Consumer(props)
+        fun two() = GlobalScope.async {
+            consumerFunc(cons2, topic2)
+        }
+        
+        val results = HashMap<String, Long>()
+        runBlocking {
+            val map1 = one().await()
+            val map2 = two().await()
+            
+            map1.iterator().forEach { 
+                val ts1 = it.value
+                val ts2 = map2[it.key]
+                if (ts2 != null) {
+                    results.put(it.key, (ts1 - ts2))
+                }
+            }
+        }
+
+        val mapSerializer: KSerializer<Map<String, Long>> = MapSerializer(String.serializer(), Long.serializer())
+        val jsonString = json.stringify(mapSerializer, results)
+        
+        println(String.format("Output File: %s", outputFile))
+        File(outputFile).writeText(jsonString)
+    }
 }
