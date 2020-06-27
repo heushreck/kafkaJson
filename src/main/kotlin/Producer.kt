@@ -35,8 +35,8 @@ fun Run(topic: String, producer: Producer, filepath: String){
 
 class Producer(properties: Properties, json: Json) {
 
-    var properties: Properties = properties
-    var kafkaProducer: KafkaProducer<String, ByteArray> = KafkaProducer<String, ByteArray>(properties)
+    val properties: Properties = properties
+    val kafkaProducer: KafkaProducer<String, ByteArray> = KafkaProducer<String, ByteArray>(properties)
     val json = json
 
     fun produce(topicName:String, value: String){
