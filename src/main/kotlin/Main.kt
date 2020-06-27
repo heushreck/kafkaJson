@@ -95,7 +95,7 @@ class Consume : CliktCommand(help = "Starts the Kafka Consumer") {
             consumerFunc(cons1, topic1)
         }
 
-        println(String.format("Kafka Broker: %s, Group ID: %s, Topic: %s, Poll Duration: %d S", config["server-address"], groupID, topic1, duration.toSeconds()))
+        println(String.format("Kafka Broker: %s, Group ID: %s, Topic: %s, Poll Duration: %d S", config["server-address"], groupID, topic2, duration.toSeconds()))
         val cons2 = Consumer(props)
         fun two() = GlobalScope.async {
             consumerFunc(cons2, topic2)
