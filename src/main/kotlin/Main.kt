@@ -35,7 +35,7 @@ class Produce : CliktCommand(help = "Starts the Kafka Producer") {
     
     val groupID: String by option(help = "Group ID of Producer.").default("test")
     val fileName: String by option(help = "JSON file to read events from.").default("events.json")
-    val topic: String by option(help = "Topic to produce events to.").default("event_test")
+    val topic: String by option(help = "Topic to produce events to.").default("events")
     val props = Properties()
 
     override fun run() {
@@ -75,7 +75,7 @@ class Consume : CliktCommand(help = "Starts the Kafka Consumer") {
         props["value.deserializer"] = ByteArrayDeserializer::class.java
         props["session.timeout.ms"] = "10000"
         props["enable.auto.commit"] = "true"
-        props["auto.offset.reset"] = "earliest"
+        //props["auto.offset.reset"] = "earliest"
         props["group.id"] = groupID
         val duration = Duration.ofSeconds(pollDuration)
 
@@ -86,7 +86,7 @@ class Consume : CliktCommand(help = "Starts the Kafka Consumer") {
             res.iterator().forEach { 
                 map.put(it.key()!!, it.timestamp())
             }
-            return map            
+            return map
         }
 
         println(String.format("Kafka Broker: %s, Group ID: %s, Topic: %s, Poll Duration: %d S", config["server-address"], groupID, topic1, duration.toSeconds()))
