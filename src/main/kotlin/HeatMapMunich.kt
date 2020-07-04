@@ -62,7 +62,7 @@ class HeatMapMunich {
                     if(s.length > 5) s += ", "
                     s += "new google.maps.LatLng($lat, $lon)"
                 }
-                if (count > 200){
+                if (count > 245){
                     running = false
                 }
             }
