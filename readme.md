@@ -1,12 +1,13 @@
-# Event Processing Cours Project
-# Quickstart
-## Start Kafka
-Start docker conatiners with `docker-compose up -d`
+# Event Processing Course Project
+## Quickstart
+### Overview
+1. Build Application `./gradlew build`.
+2. `docker-compose up -d` to start Kafka environment.
+3. Start Consumer `java -jar bin/kafkaJson.jar consume`.
+4. Start Producer (in a different terminal) `java -jar bin/kafkaJson.jar produce`.
+4. Use `--help` to get an overview of the configuration options.
 
-## Produce Events
-Build the project and run as a producer
-
-## Create Streams
+### Create Streams
 Connect to ksqldb-cli
 `docker exec -it ksqldb-cli ksql http://ksqldb-server:8088`
 inside:
@@ -71,7 +72,7 @@ CREATE STREAM meetup_events_stream_de_munich AS SELECT *
 FROM meetup_events_stream_de 
 WHERE "GROUP"->city = 'Munich' OR "GROUP"->city = 'München';
 ```
-# Create Heatmap
+### Create Heatmap
 Stream with event id, name and venue lat and lon
 ```
 CREATE STREAM meetup_events_stream_de_munich_ll AS 
@@ -82,7 +83,8 @@ In line 107 of index.html there need to be the String: "insert here"
 
 next run the main function of HeatMapMunich.kt
 
-# Create stream for all events in europe
+### Create TopK
+Create stream for all events in europe
 ```
 CREATE STREAM meetup_events_europe AS
         SELECT *
@@ -118,12 +120,19 @@ CREATE STREAM meetup_events_europe AS
                         OR "GROUP"->country='se';
 ```
 
-# Aggregate all events in europ per city and count tables
+Aggregate all events in europ per city and count tables
 ```
 CREATE TABLE events_per_city_europe AS SELECT "GROUP"->city as city, COUNT(*) AS count FROM meetup_events_europe GROUP BY "GROUP"->city;
 ```
 
-# Print  (ORDER BY not immplemented yet so no TOP 10)
+Print  (ORDER BY not immplemented yet so no TOP 10)
 ```
 SELECT * FROM events_per_city_europe EMIT CHANGES;
 ```
+
+# Repo Structure
+- `bin` - compiled java binary
+- `gradle` - gradle wrapper
+- `src` - kotlin code
+- `index.html` - heatmap
+- `project_*.pdf` - course description and deliverables
