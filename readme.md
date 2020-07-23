@@ -59,7 +59,7 @@ CREATE STREAM meetup_events_stream(
     >,
     group_lat DOUBLE
   >,
-  status VARCHAR) WITH (KAFKA_TOPIC='event_test', VALUE_FORMAT='JSON');
+  status VARCHAR) WITH (KAFKA_TOPIC='events', VALUE_FORMAT='JSON');
 ```
 Stream to filter events in germany
 ```
